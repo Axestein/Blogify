@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('./partials/head') %>
+    <title>Add New Blog</title>
+</head>
+<body>
+    <%- include('./partials/nav') %>
+
+    <div class="container mt-3">
+        <form action="/blog" method="post" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="coverImage" class="form-label">Cover Image</label>
+                <div class="d-flex align-items-center">
+                    <input type="file" class="form-control" id="coverImage" name="coverImage" style="display: none;" onchange="updateFileName()" />
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('coverImage').click()">Choose File</button>
+                    <span id="fileName" class="ms-2 text-muted">No file chosen</span>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="title" class="form-label">Title</label>
+                <input type="text" class="form-control" id="title" name="title" required>
+            </div>
+            <div class="mb-3">
+                <label for="body" class="form-label">Content</label>
+                <textarea class="form-control" id="floatingTextarea" name="body" placeholder="Leave a comment here" required></textarea>
+            </div>
+            <div class="mb-3">
+                <button type="submit" class="btn btn-primary w-100">Submit</button>
+            </div>
+        </form>
+    </div>
+
+    <%- include('./partials/scripts') %>
+
+    <script>
+        function updateFileName() {
+            const fileInput = document.getElementById('coverImage');
+            const fileName = fileInput.files.length > 0 ? fileInput.files[0].name : 'No file chosen';
+            document.getElementById('fileName').textContent = fileName;
+        }
+    </script>
+</body>
+</html>
