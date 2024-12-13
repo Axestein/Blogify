@@ -1,59 +1,61 @@
 const { Router } = require("express");
-const router = Router();
-const multer = require('multer');
-const path = require('path');
+const multer = require("multer");
+const path = require("path");
+
 const Blog = require("../models/blog");
+const Comment = require("../models/comment");
+
+const router = Router();
 
 const storage = multer.diskStorage({
-    destination: function(req, file, cb){
-        cb(null, path.resolve(`./public/uploads/`));  
-    },
-    filename: function(req, file, cb){
-        const fileName = `${Date.now()}-${file.originalname}`; 
-        cb(null, fileName);
-    },
+  destination: function (req, file, cb) {
+    cb(null, path.resolve(`./public/uploads/`));
+  },
+  filename: function (req, file, cb) {
+    const fileName = `${Date.now()}-${file.originalname}`;
+    cb(null, fileName);
+  },
 });
 
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 },
-    fileFilter: function(req, file, cb) {
-        const fileTypes = /jpeg|jpg|png|gif/; 
-        const extname = fileTypes.test(path.extname(file.originalname).toLowerCase());
-        const mimeType = fileTypes.test(file.mimetype);
+const upload = multer({ storage: storage });
 
-        if (extname && mimeType) {
-            return cb(null, true);
-        } else {
-            cb(new Error('Only image files are allowed'));
-        }
-    }
+router.get("/add-new", (req, res) => {
+  return res.render("addBlog", {
+    user: req.user,
+  });
 });
 
-router.get('/add-new', (req, res) => {
-    return res.render("addBlog", {
-        user: req.user,
-    });
+router.get("/:id", async (req, res) => {
+  const blog = await Blog.findById(req.params.id).populate("createdBy");
+  const comments = await Comment.find({ blogId: req.params.id }).populate(
+    "createdBy"
+  );
+
+  return res.render("blog", {
+    user: req.user,
+    blog,
+    comments,
+  });
 });
-router.post('/', upload.single('coverImage'), async (req, res) => {
-    try {
-        const { title, body } = req.body;
-        if (!title || !body) {
-            return res.status(400).send('Title and content are required');
-        }
 
-        const blog = await Blog.create({
-            body,
-            title,
-            createdBy: req.user._id,
-            coverImageURL: req.file ? `/uploads/${req.file.filename}` : null, // Only save the URL if a file is uploaded
-        });
+router.post("/comment/:blogId", async (req, res) => {
+  await Comment.create({
+    content: req.body.content,
+    blogId: req.params.blogId,
+    createdBy: req.user._id,
+  });
+  return res.redirect(`/blog/${req.params.blogId}`);
+});
 
-        return res.redirect(`/blog/${blog._id}`);
-    } catch (error) {
-        console.error(error);
-        return res.status(500).send('An error occurred while creating the blog post');
-    }
+router.post("/", upload.single("coverImage"), async (req, res) => {
+  const { title, body } = req.body;
+  const blog = await Blog.create({
+    body,
+    title,
+    createdBy: req.user._id,
+    coverImageURL: `/uploads/${req.file.filename}`,
+  });
+  return res.redirect(`/blog/${blog._id}`);
 });
 
 module.exports = router;
